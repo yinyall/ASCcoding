@@ -1,0 +1,2 @@
+# ASCcoding
+some exercises
