@@ -22,61 +22,76 @@
 
 
 
+
 #include <stdio.h>
 #include <string.h>
 
-#define MAXN 35
-#define MAXM 205
+#define MAX_M 205
+#define MAX_N 35
 
-int w[MAXN], v[MAXN];          // 体积、战力；0 号是虚拟根
-int dp[MAXN][MAXM];            // dp[u][j]：以 u 为根的子树，容量 j 的最大战力
-int temp[MAXM];
-int n, m;
-
-// 邻接表
-int head[MAXN], nxt[MAXN], to[MAXN], ecnt = 0;
-
-void addEdge(int u, int v) {
-    to[++ecnt] = v;
-    nxt[ecnt] = head[u];
-    head[u] = ecnt;
-}
-
-void dfs(int u) {
-    // 初始化：只选 u 自己
-    for (int j = w[u]; j <= m; j++) dp[u][j] = v[u];
-
-    // 合并每个子节点
-    for (int e = head[u]; e; e = nxt[e]) {
-        int son = to[e];
-        dfs(son);
-        memcpy(temp, dp[u], sizeof(dp[u]));   // 备份旧状态
-        for (int j = m; j >= w[u]; j--)
-            for (int k = 0; k <= j - w[u]; k++)
-                if (dp[son][k] + temp[j - k] > dp[u][j])
-                    dp[u][j] = dp[son][k] + temp[j - k];
-    }
-}
+int m, n;
+int w[MAX_N], v[MAX_N];
+int dep[MAX_N][MAX_N];
+int arr[MAX_M];
 
 int main() {
     scanf("%d %d", &m, &n);
-    for (int i = 1; i <= n; i++) scanf("%d %d", &w[i], &v[i]);
-
-    int k, indeg[MAXN] = {0};
+    for (int i = 1; i <= n; i++) {
+        scanf("%d %d", &w[i], &v[i]);
+    }
+    
+    int k;
     scanf("%d", &k);
-    while (k--) {
+    for (int i = 0; i < k; i++) {
         int a, b;
         scanf("%d %d", &a, &b);
-        addEdge(b, a);      // b 是父，a 是子
-        indeg[a]++;
+        dep[a][b] = 1;
     }
-
-    // 虚拟根 0，连接所有无依赖的英雄
-    w[0] = v[0] = 0;
-    for (int i = 1; i <= n; i++)
-        if (!indeg[i]) addEdge(0, i);
-
-    dfs(0);
-    printf("%d\n", dp[0][m]);
+    
+    memset(arr, 0, sizeof(arr));
+    
+    int need[MAX_N][MAX_N] = {0};
+    for (int i = 1; i <= n; i++) {
+        need[i][i] = 1;
+        for (int j = 1; j <= n; j++) {
+            if (dep[i][j]) {
+                need[i][j] = 1;
+                for (int l = 1; l <= n; l++) {
+                    if (dep[j][l]) {
+                        need[i][l] = 1;
+                    }
+                }
+            }
+        }
+    }
+    
+    int total = 1;
+    for (int i = 0; i < n; i++) total *= 2;
+    
+    for (int count = 0; count < total; count++) {
+        int total_w = 0, total_v = 0;
+        int valid = 1;
+        
+        for (int i = 0; i < n; i++) {
+            if (count & (1 << i)) {
+                int hero = i + 1;
+                for (int j = 1; j <= n; j++) {
+                    if (need[hero][j] && !(count & (1 << (j-1)))) {
+                        valid = 0;
+                        break;
+                    }
+                }
+                if (!valid) break;
+                total_w += w[hero];
+                total_v += v[hero];
+            }
+        }
+        
+        if (valid && total_w <= m && total_v > arr[m]) {
+            arr[m] = total_v;
+        }
+    }
+    
+    printf("%d\n", arr[m]);
     return 0;
 }
